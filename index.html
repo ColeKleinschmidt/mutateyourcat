@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mutate Your Cat</title>
+    <meta name="description" content="Upload a picture of your cat and watch it transform into a funny, mutated version. Fun cat photo editing tool.">
+    <link rel="icon" href="./assets/images/stacyface.png" type="image/png">
+    <link rel="shortcut icon" href="./assets/images/stacyface.png" type="image/png">
+    <link rel="apple-touch-icon" href="./assets/images/stacyface.png">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Metal+Mania&family=Nosifer&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="cat-prints">
+        <div class="paw-1"></div>
+        <div class="paw-2"></div>
+        <div class="paw-3"></div>
+        <div class="paw-4"></div>
+        <div class="paw-5"></div>
+        <div class="paw-6"></div>
+        <div class="paw-7"></div>
+        <div class="paw-8"></div>
+        <div class="paw-9"></div>
+        <div class="paw-10"></div>
+        <div class="paw-11"></div>
+    </div>
+    <div class="character-backgrounds">
+        <div class="char-bg char-radicalrat"></div>
+        <div class="char-bg char-stacy"></div>
+        <div class="char-bg char-guillotina"></div>
+        <div class="char-bg char-mrtinkles"></div>
+        <div class="char-bg char-tracy"></div>
+        <div class="char-bg char-doctor"></div>
+        <div class="char-bg char-frank"></div>
+        <div class="char-bg char-butch"></div>
+    </div>
+    <header>
+        <div class="container">
+            <div class="logo-container">
+                <video id="logoVideo" class="logo logo-video" autoplay muted loop>
+                    <source src="assets/video/mutateyourcatanimation.mp4" type="video/mp4">
+                </video>
+            </div>
+            <nav class="main-nav">
+                <ul class="nav-menu">
+                    <li><a href="#" class="nav-link active" data-route="mutations"><img src="assets/images/mutate.png" alt="Cat Mutations"></a></li>
+                    <li><a href="#" class="nav-link" data-route="wishlists"><img src="assets/images/wishlist.png" alt="Wishlists"></a></li>
+                    <li><a href="#" class="nav-link" data-route="credits"><img src="assets/images/art.png" alt="Artist Credits"></a></li>
+                    <li><a href="#" class="nav-link" data-route="meow"><img src="assets/images/meow.png" alt="Meow"></a></li>
+                </ul>
+                <div class="music-controls">
+                    <div class="now-playing" id="nowPlaying" style="display: none;">
+                        <small>Now Playing: Mewgenics Theme</small>
+                    </div>
+                    <div class="music-buttons">
+                        <button id="previousButton" class="music-btn" title="Previous Song">⏮</button>
+                        <button id="musicToggle" class="music-btn" title="Play Music">▶</button>
+                        <button id="skipButton" class="music-btn" title="Next Song">⏭</button>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <!-- Cat Mutations Route -->
+        <div class="route-section" id="mutations-route">
+            <div class="container">
+                <section class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <h2>Upload Your Photo</h2>
+                        <p>Mewgenics-ify your cat (or any other animal)</p>
+                        <input type="file" id="fileInput" accept="image/*" hidden>
+                        <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                            Choose Photo
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="preview-section" id="previewSection" style="display: none;">
+                    <div class="image-container">
+                        <div class="original-image">
+                            <h3>Original Cat</h3>
+                            <img id="originalImage" alt="Original cat photo">
+                        </div>
+                        <div class="arrow">➡️</div>
+                        <div class="mutated-image">
+                            <h3>Mutated Cat</h3>
+                            <div class="mutation-placeholder" id="mutatedResult">
+                                <div class="loading-spinner" style="display: none;">🔄</div>
+                                <div class="mutation-text">Click "Mutate" to transform!</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="controls">
+                        <button class="mutate-btn" id="mutateBtn" onclick="mutateCat()">
+                            MUTATE MY CAT
+                        </button>
+                        <button class="download-btn" id="downloadBtn" style="display: none;" onclick="downloadResult()">
+                            📥 DOWNLOAD ABOMINATION
+                        </button>
+                        <button class="reset-btn" onclick="resetUpload()">
+                            🗑️ DISPOSE & RESTART
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </div>
+        </div>
+
+        <!-- Wishlists Route -->
+        <div class="route-section" id="wishlists-route" style="display: none;">
+            <div class="container">
+                <section class="content-section">
+                    <h2>Game Wishlists</h2>
+                    <div class="wishlist-content">
+                        <div class="game-item">
+                            <h3>Mewgenics</h3>
+                            <p>The upcoming cat genetics simulation game by Edmund McMillen and Tyler Glaiel.</p>
+                            <div class="wishlist-stats" id="wishlistStats">
+                                <p>Loading wishlist ranking...</p>
+                            </div>
+                            <p><small><em>Updated hourly via the Games-Popularity.com Steam wishlists API</em></small></p>
+                            <a href="https://store.steampowered.com/app/686060/Mewgenics/" target="_blank" class="steam-link">Wishlist on Steam!</a>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- Artist Credits Route -->
+        <div class="route-section" id="credits-route" style="display: none;">
+            <div class="container">
+                <section class="content-section">
+                    <h2>Artist Credits</h2>
+                    <div class="credits-content">
+                        <div class="credit-item">
+                            <h3>Game Creators</h3>
+                            <p><strong>Edmund McMillen</strong> - Game Designer & Artist</p>
+                            <p><strong>Tyler Glaiel</strong> - Programmer & Co-Designer</p>
+                        </div>
+                        <div class="credit-item">
+                            <h3>Character Art Credits</h3>
+                            <p><strong>@dailymewgenics</strong></p>
+                            <p>Radical Rat, Stacy, Guillotina, Tink, Tracy, Doctor, Frank, Butch images drawn by them on X</p>
+                        </div>
+                        <div class="credit-item">
+                            <h3>Music Credits</h3>
+                            <p><strong>All Music</strong> by Matthias Bossi & Jon Evans (<a href="https://ridiculon.bandcamp.com/" target="_blank" rel="noopener noreferrer">Ridiculon</a>)</p>
+                            <p><em>Album purchased by me for $6.66</em></p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+    </main>
+
+    <footer>
+        <div class="container">
+            <p><small>Based on the game Mewgenics by Edmund McMillen and Tyler Glaiel. All rights go to them.</small></p>
+            <p><small>Wishlist Mewgenics on Steam!</small></p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
