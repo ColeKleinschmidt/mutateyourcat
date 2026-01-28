@@ -194,7 +194,7 @@ function initializeRouting() {
         // Array of meow sound files - recordings 1 through 30
         const meowSounds = [];
         for (let i = 1; i <= 30; i++) {
-            meowSounds.push(`assets/sounds/recording ${i}.mp3`);
+            meowSounds.push(`assets/sounds/Recording${i}.mp3`);
         }
         
         // Pick a random meow sound
