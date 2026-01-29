@@ -3,6 +3,7 @@ let originalImageDataUrl = null;
 let fileUploadInitialized = false;
 let mutationComplete = false;
 let currentMutationData = null;
+let catFaceEnabled = true;
 
 document.addEventListener('DOMContentLoaded', function() {
     if (!fileUploadInitialized) {
@@ -140,6 +141,133 @@ async function fetchMewgenicsWishlistData() {
             <p><small>API temporarily unavailable</small></p>
         `;
     }
+}
+
+function toggleCatFace() {
+    catFaceEnabled = !catFaceEnabled;
+    const toggleBtn = document.getElementById('faceToggleBtn');
+    
+    if (catFaceEnabled) {
+        toggleBtn.style.background = '#4CAF50';
+    } else {
+        toggleBtn.style.background = '#f44336';
+    }
+    
+    // Only regenerate the image without changing name/stats
+    if (mutationComplete && currentMutationData) {
+        regenerateImageOnly();
+    }
+}
+
+function regenerateImageOnly() {
+    if (!currentMutationData) return;
+    
+    // Create canvas from stored image data
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = currentMutationData.imageData.width;
+    canvas.height = currentMutationData.imageData.height;
+    ctx.putImageData(currentMutationData.imageData, 0, 0);
+    
+    // Only recreate the composite image, keeping existing name and stats
+    recreateCompositeOnly(canvas, currentMutationData.mutationClass);
+}
+
+function regenerateMutation() {
+    if (!currentMutationData) return;
+    
+    // Create canvas from stored image data
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = currentMutationData.imageData.width;
+    canvas.height = currentMutationData.imageData.height;
+    ctx.putImageData(currentMutationData.imageData, 0, 0);
+    
+    createMutatedCatComposite(canvas, currentMutationData.mutationClass);
+}
+
+async function recreateCompositeOnly(mutatedCanvas, mutationClass) {
+    const mutatedResult = document.getElementById('mutatedResult');
+    const existingContainer = mutatedResult.querySelector('div[style*="position: relative"]');
+    
+    if (!existingContainer) return;
+    
+    const bodyFileName = `${mutationClass.name.toLowerCase()}body.png`;
+    const catBodyImg = new Image();
+    
+    catBodyImg.onload = async function() {
+        const compositeCanvas = document.createElement('canvas');
+        const compositeCtx = compositeCanvas.getContext('2d');
+        
+        compositeCanvas.width = catBodyImg.width;
+        compositeCanvas.height = catBodyImg.height;
+        
+        // Background
+        compositeCtx.fillStyle = '#2d2d2d';
+        compositeCtx.fillRect(0, 0, compositeCanvas.width, compositeCanvas.height);
+        
+        // Ground elements
+        const groundCircleRadius = catBodyImg.width * 1.2;
+        const groundCircleY = catBodyImg.height * 0.95;
+        compositeCtx.fillStyle = '#4c4c4c';
+        compositeCtx.beginPath();
+        compositeCtx.ellipse(compositeCanvas.width / 2, groundCircleY, groundCircleRadius, groundCircleRadius * 0.25, 0, 0, Math.PI * 2);
+        compositeCtx.fill();
+        
+        // Shadow
+        const shadowWidth = catBodyImg.width * 0.2244; // 20% bigger (0.187 * 1.2)
+        const shadowHeight = catBodyImg.height * 0.0768; // 20% bigger (0.064 * 1.2)
+        const shadowY = catBodyImg.height * 0.88;
+        compositeCtx.fillStyle = '#414141';
+        compositeCtx.beginPath();
+        compositeCtx.ellipse(compositeCanvas.width / 2, shadowY, shadowWidth, shadowHeight, 0, 0, Math.PI * 2);
+        compositeCtx.fill();
+        
+        compositeCtx.drawImage(catBodyImg, 0, 0);
+        
+        // Cat head positioning
+        const cropSize = Math.min(mutatedCanvas.width, mutatedCanvas.height);
+        const cropX = (mutatedCanvas.width - cropSize) / 2;
+        const cropY = (mutatedCanvas.height - cropSize) / 2;
+        
+        const circleSize = Math.min(catBodyImg.width * 0.368, catBodyImg.height * 0.368);
+        const circleX = (catBodyImg.width - circleSize) / 2 - circleSize * 0.4;
+        const circleY = catBodyImg.height * 0.35;
+        
+        compositeCtx.save();
+        compositeCtx.beginPath();
+        compositeCtx.arc(circleX + circleSize/2, circleY + circleSize/2, circleSize/2, 0, Math.PI * 2);
+        compositeCtx.clip();
+        
+        compositeCtx.drawImage(
+            mutatedCanvas,
+            cropX, cropY, cropSize, cropSize,
+            circleX, circleY, circleSize, circleSize
+        );
+        
+        compositeCtx.restore();
+        
+        // Border
+        compositeCtx.strokeStyle = '#000000';
+        compositeCtx.lineWidth = 38.98;
+        compositeCtx.beginPath();
+        compositeCtx.arc(circleX + circleSize/2, circleY + circleSize/2, circleSize/2, 0, Math.PI * 2);
+        compositeCtx.stroke();
+        
+        // Face features
+        if (catFaceEnabled) {
+            await drawCatFaceFeatures(compositeCtx, circleX, circleY, circleSize, mutationClass);
+        }
+        
+        // Update only the image, keep existing name and stats
+        const existingImg = existingContainer.querySelector('img');
+        if (existingImg) {
+            existingImg.src = compositeCanvas.toDataURL();
+            window.mutatedImageDataUrl = compositeCanvas.toDataURL();
+        }
+    };
+    
+    catBodyImg.src = `assets/images/${bodyFileName}`;
 }
 
 function initializeRouting() {
@@ -333,10 +461,8 @@ function displayPreview(imageSrc) {
 
 function resetMutationResult() {
     const mutatedResult = document.getElementById('mutatedResult');
-    const downloadBtn = document.getElementById('downloadBtn');
     
     mutatedResult.innerHTML = '<div class="mutation-text">Click "MUTATE" to, well, mutate</div>';
-    downloadBtn.style.display = 'none';
 }
 
 function mutateCat() {
@@ -346,7 +472,6 @@ function mutateCat() {
     }
     
     const mutatedResult = document.getElementById('mutatedResult');
-    const downloadBtn = document.getElementById('downloadBtn');
     const mutateBtn = document.getElementById('mutateBtn');
     
     mutatedResult.innerHTML = '<div class="loading-spinner"><img src="assets/images/mewgenicspaw.png" class="spinning-paw"></div><div class="mutation-text">Mutating your image...</div>';
@@ -358,7 +483,6 @@ function mutateCat() {
         
         mutateBtn.disabled = false;
         mutateBtn.innerHTML = '<img src="assets/images/mewgenicspaw.png" alt="" class="btn-icon"> MUTATE AGAIN';
-        downloadBtn.style.display = 'inline-block';
         
         mutationComplete = true;
     }, 2000);
@@ -434,6 +558,12 @@ function performColorMutation() {
         }
         
         ctx.putImageData(imageData, 0, 0);
+        
+        // Store mutation data for regeneration
+        currentMutationData = {
+            imageData: ctx.getImageData(0, 0, width, height),
+            mutationClass: mutationClass
+        };
         
         createMutatedCatComposite(canvas, mutationClass);
     };
@@ -511,13 +641,13 @@ function generateRandomCatName() {
     return catNames[Math.floor(Math.random() * catNames.length)];
 }
 
-function createMutatedCatComposite(mutatedCanvas, mutationClass) {
+async function createMutatedCatComposite(mutatedCanvas, mutationClass) {
     const mutatedResult = document.getElementById('mutatedResult');
     
     const bodyFileName = `${mutationClass.name.toLowerCase()}body.png`;
     
     const catBodyImg = new Image();
-    catBodyImg.onload = function() {
+    catBodyImg.onload = async function() {
         const compositeCanvas = document.createElement('canvas');
         const compositeCtx = compositeCanvas.getContext('2d');
         
@@ -534,8 +664,8 @@ function createMutatedCatComposite(mutatedCanvas, mutationClass) {
         compositeCtx.ellipse(compositeCanvas.width / 2, groundCircleY, groundCircleRadius, groundCircleRadius * 0.25, 0, 0, Math.PI * 2);
         compositeCtx.fill();
         
-        const shadowWidth = catBodyImg.width * 0.6;
-        const shadowHeight = catBodyImg.height * 0.15;
+        const shadowWidth = catBodyImg.width * 0.2244; // 20% bigger (0.187 * 1.2)
+        const shadowHeight = catBodyImg.height * 0.0768; // 20% bigger (0.064 * 1.2)
         const shadowY = catBodyImg.height * 0.88;
         compositeCtx.fillStyle = '#414141';
         compositeCtx.beginPath();
@@ -571,6 +701,10 @@ function createMutatedCatComposite(mutatedCanvas, mutationClass) {
         compositeCtx.beginPath();
         compositeCtx.arc(circleX + circleSize/2, circleY + circleSize/2, circleSize/2, 0, Math.PI * 2);
         compositeCtx.stroke();
+        
+        if (catFaceEnabled) {
+            await drawCatFaceFeatures(compositeCtx, circleX, circleY, circleSize, mutationClass);
+        }
         
         const resultImg = document.createElement('img');
         resultImg.src = compositeCanvas.toDataURL();
@@ -671,6 +805,13 @@ function createMutatedCatComposite(mutatedCanvas, mutationClass) {
             catNameSpan.innerHTML = newCatName;
         };
         
+        const faceToggleBtn = document.createElement('button');
+        faceToggleBtn.id = 'faceToggleBtn';
+        faceToggleBtn.innerHTML = '🐱';
+        faceToggleBtn.className = 'face-toggle-btn';
+        faceToggleBtn.style.cssText = `background: ${catFaceEnabled ? '#4CAF50' : '#f44336'}; color: white; border: none; padding: 8px; border-radius: 5px; font-family: "Manline Slabs", serif; cursor: pointer; margin-left: 5px; display: inline-flex; align-items: center; font-size: 16px;`;
+        faceToggleBtn.onclick = toggleCatFace;
+        
         mutatedResult.appendChild(container);
         
         const nameRerollContainer = document.createElement('div');
@@ -682,6 +823,7 @@ function createMutatedCatComposite(mutatedCanvas, mutationClass) {
         
         nameRerollContainer.appendChild(catNameSpan);
         nameRerollContainer.appendChild(rerollBtn);
+        nameRerollContainer.appendChild(faceToggleBtn);
         mutatedResult.appendChild(nameRerollContainer);
         
         const gameStatsContainer = document.createElement('div');
@@ -988,4 +1130,105 @@ function resetUpload() {
 
 function showNotification(message, type = 'info') {
     alert(message);
+}
+
+async function drawCatFaceFeatures(ctx, headX, headY, headSize, mutationClass) {
+    const centerX = headX + headSize / 2;
+    const centerY = headY + headSize / 2;
+    const scale = headSize / 200; // Base scale for features
+    
+    // Draw class-specific ears
+    const earsImg = new Image();
+    const earsPromise = new Promise((resolve) => {
+        earsImg.onload = resolve;
+        earsImg.onerror = resolve; // Continue even if ears don't load
+    });
+    
+    // Use class-specific ears
+    const earsFileName = `${mutationClass.name.toLowerCase()}ears.png`;
+    earsImg.src = `assets/images/${earsFileName}`;
+    await earsPromise;
+    
+    if (earsImg.complete && earsImg.naturalWidth !== 0) {
+        const earsWidth = headSize * 1.2;
+        const earsHeight = (earsImg.naturalHeight / earsImg.naturalWidth) * earsWidth;
+        const earsX = headX - (earsWidth - headSize) / 2;
+        const earsY = headY - earsHeight * 0.8; // Position ears much higher at top of head
+        
+        ctx.drawImage(earsImg, earsX, earsY, earsWidth, earsHeight);
+    }
+    
+    // Draw random eyes (eyes1.png to eyes5.png)
+    const eyesImg = new Image();
+    const eyesPromise = new Promise((resolve) => {
+        eyesImg.onload = resolve;
+        eyesImg.onerror = resolve; // Continue even if eyes don't load
+    });
+    
+    const eyesNumber = Math.floor(Math.random() * 5) + 1; // Random 1-5
+    const eyesFileName = `eyes${eyesNumber}.png`;
+    eyesImg.src = `assets/images/${eyesFileName}`;
+    await eyesPromise;
+    
+    if (eyesImg.complete && eyesImg.naturalWidth !== 0) {
+        const eyesWidth = headSize * 1.2; // 50% bigger (was 0.8, now 1.2)
+        const eyesHeight = (eyesImg.naturalHeight / eyesImg.naturalWidth) * eyesWidth;
+        const eyesX = centerX - eyesWidth / 2 - headSize * 0.2; // Shifted 20% left
+        const eyesY = centerY - eyesHeight / 2 - headSize * 0.1; // Slightly higher
+        
+        ctx.drawImage(eyesImg, eyesX, eyesY, eyesWidth, eyesHeight);
+    } else {
+        // Fallback: Draw simple eyes if image doesn't load
+        const eyeSize = headSize * 0.08;
+        const eyeY = centerY - headSize * 0.1;
+        const eyeOffsetX = headSize * 0.15;
+        
+        ctx.fillStyle = '#000000';
+        ctx.beginPath();
+        ctx.arc(centerX - eyeOffsetX, eyeY, eyeSize, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.arc(centerX + eyeOffsetX, eyeY, eyeSize, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    
+    // Draw random mouth (mouth1.png to mouth5.png)
+    const mouthImg = new Image();
+    const mouthPromise = new Promise((resolve) => {
+        mouthImg.onload = resolve;
+        mouthImg.onerror = resolve; // Continue even if mouth doesn't load
+    });
+    
+    const mouthNumber = Math.floor(Math.random() * 5) + 1; // Random 1-5
+    const mouthFileName = `mouth${mouthNumber}.png`;
+    mouthImg.src = `assets/images/${mouthFileName}`;
+    await mouthPromise;
+    
+    if (mouthImg.complete && mouthImg.naturalWidth !== 0) {
+        const mouthWidth = headSize * 0.8; // Same size as eyes
+        const mouthHeight = (mouthImg.naturalHeight / mouthImg.naturalWidth) * mouthWidth;
+        const mouthX = centerX - mouthWidth / 2 - headSize * 0.2; // Shifted 20% left
+        const mouthY = centerY - headSize * 0.3; // 10% higher (was -0.225, now -0.3)
+        
+        ctx.drawImage(mouthImg, mouthX, mouthY, mouthWidth, mouthHeight);
+    } else {
+        // Fallback: Draw simple mouth if image doesn't load
+        const mouthY = centerY + headSize * 0.15;
+        const mouthWidth = headSize * 0.12;
+        
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = headSize * 0.015;
+        
+        // Cat mouth (inverted Y shape)
+        ctx.beginPath();
+        ctx.moveTo(centerX, mouthY - headSize * 0.02);
+        ctx.lineTo(centerX - mouthWidth / 2, mouthY + headSize * 0.02);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(centerX, mouthY - headSize * 0.02);
+        ctx.lineTo(centerX + mouthWidth / 2, mouthY + headSize * 0.02);
+        ctx.stroke();
+    }
 }

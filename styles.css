@@ -850,14 +850,27 @@ main {
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
+}
+
+.paw-triangle {
+    position: absolute;
+    width: 72px;
+    height: 72px;
+    z-index: -1;
+    opacity: 0.3;
+    filter: grayscale(1) brightness(0.4);
+    transform: rotate(90deg);
 }
 
 .arrow-icon {
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
     filter: grayscale(1) brightness(0.6);
-    transform: rotate(90deg);
+    transform: rotate(90deg) translateX(-15px);
     animation: pulse 2s infinite;
+    position: relative;
+    z-index: 1;
 }
 
 @keyframes pulse {
@@ -973,6 +986,30 @@ main {
         inset 0 1px 0 rgba(255, 255, 255, 0.7);
     border-color: #666;
     background: linear-gradient(45deg, #d0d0d0, #c0c0c0);
+}
+
+.face-toggle-btn {
+    background: #4CAF50;
+    color: white;
+    border: 2px solid #45a049;
+    font-family: 'Manline Slabs', serif;
+    font-size: 1rem;
+    font-weight: bold;
+    padding: 12px 24px;
+    margin: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 
+        0 4px 15px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.face-toggle-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+        0 6px 20px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .download-btn {
