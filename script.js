@@ -1165,7 +1165,7 @@ async function drawCatFaceFeatures(ctx, headX, headY, headSize, mutationClass) {
         eyesImg.onerror = resolve; // Continue even if eyes don't load
     });
     
-    const eyesNumber = Math.floor(Math.random() * 5) + 1; // Random 1-5
+    const eyesNumber = Math.floor(Math.random() * 10) + 1; // Random 1-10
     const eyesFileName = `eyes${eyesNumber}.png`;
     eyesImg.src = `assets/images/${eyesFileName}`;
     await eyesPromise;
@@ -1200,7 +1200,7 @@ async function drawCatFaceFeatures(ctx, headX, headY, headSize, mutationClass) {
         mouthImg.onerror = resolve; // Continue even if mouth doesn't load
     });
     
-    const mouthNumber = Math.floor(Math.random() * 5) + 1; // Random 1-5
+    const mouthNumber = Math.floor(Math.random() * 10) + 1; // Random 1-10
     const mouthFileName = `mouth${mouthNumber}.png`;
     mouthImg.src = `assets/images/${mouthFileName}`;
     await mouthPromise;
