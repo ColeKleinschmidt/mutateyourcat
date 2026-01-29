@@ -807,9 +807,9 @@ async function createMutatedCatComposite(mutatedCanvas, mutationClass) {
         
         const faceToggleBtn = document.createElement('button');
         faceToggleBtn.id = 'faceToggleBtn';
-        faceToggleBtn.innerHTML = '🐱';
+        faceToggleBtn.innerHTML = '<img src="assets/images/catfacetoggle.png" alt="" style="width: 20px; height: 20px;">';
         faceToggleBtn.className = 'face-toggle-btn';
-        faceToggleBtn.style.cssText = `background: ${catFaceEnabled ? '#4CAF50' : '#f44336'}; color: white; border: none; padding: 8px; border-radius: 5px; font-family: "Manline Slabs", serif; cursor: pointer; margin-left: 5px; display: inline-flex; align-items: center; font-size: 16px;`;
+        faceToggleBtn.style.cssText = `background: ${catFaceEnabled ? '#4CAF50' : '#f44336'}; color: white; border: none; padding: 8px; border-radius: 5px; font-family: "Manline Slabs", serif; cursor: pointer; margin-left: 5px; display: inline-flex; align-items: center;`;
         faceToggleBtn.onclick = toggleCatFace;
         
         mutatedResult.appendChild(container);
@@ -828,6 +828,8 @@ async function createMutatedCatComposite(mutatedCanvas, mutationClass) {
         
         const gameStatsContainer = document.createElement('div');
         
+        const catGender = Math.random() < 0.5 ? 'male' : 'female';
+        
         const canvas = document.createElement('canvas');
         canvas.width = 400;
         canvas.height = 200;
@@ -838,6 +840,12 @@ async function createMutatedCatComposite(mutatedCanvas, mutationClass) {
         
         const noiseDataUrl = canvas.toDataURL();
         gameStatsContainer.style.cssText = `background-color: #dbdbd8; border-radius: 0 0 8px 8px; padding: 15px; margin: 0 auto 10px auto; width: calc(100% - 20px); box-sizing: border-box; position: relative;`;
+        
+        const genderIcon = document.createElement('img');
+        genderIcon.src = `assets/images/${catGender}icon.png`;
+        genderIcon.style.cssText = 'position: absolute; top: 10px; right: 60px; width: 52px; height: 52px; z-index: 10;';
+        genderIcon.alt = catGender;
+        gameStatsContainer.appendChild(genderIcon);
         
         const collarImg = document.createElement('img');
         const collarName = mutationClass.name.toLowerCase() + 'collar.png';
