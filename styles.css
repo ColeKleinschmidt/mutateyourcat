@@ -1,4 +1,3 @@
-/* Custom font definition */
 @font-face {
     font-family: "Bubbly V3";
     src: url("https://db.onlinewebfonts.com/t/a5cf53ac618e3be8f03a85a9e83b9f2d.eot");
@@ -9,14 +8,19 @@
     url("https://db.onlinewebfonts.com/t/a5cf53ac618e3be8f03a85a9e83b9f2d.svg#Bubbly V3")format("svg");
 }
 
-/* Animations */
+@font-face {
+    font-family: "Manline Slabs";
+    src: url("assets/fonts/ManlineSlabs-Regular.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
 @keyframes shake {
     0%, 100% { transform: translateY(0) scale(1); }
     10%, 30%, 50%, 70%, 90% { transform: translateY(-1px) scale(1.1); }
     20%, 40%, 60%, 80% { transform: translateY(1px) scale(1.1); }
 }
 
-/* Reset and base styles */
 * {
     margin: 0;
     padding: 0;
@@ -33,7 +37,6 @@ body {
     overflow-x: hidden;
 }
 
-/* Film grain with random black blobs - excludes upload section */
 body::after {
     content: '';
     position: fixed;
@@ -132,7 +135,6 @@ body::after {
     }
 }
 
-/* Cat prints background - randomly placed and rotated */
 .cat-prints::before,
 .cat-prints::after {
     content: '';
@@ -173,7 +175,6 @@ body::after {
     animation: float 20s ease-in-out infinite alternate;
 }
 
-/* Mewgenics paw print images */
 .cat-prints {
     position: relative;
 }
@@ -343,7 +344,6 @@ body::after {
     padding: 0 20px;
 }
 
-/* Header */
 header {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
@@ -387,13 +387,12 @@ header::before {
 
 .logo-video {
     transition: opacity 0.5s ease-in-out;
-    /* No drop shadow for video */
 }
 
 .logo-image {
-    opacity: 0; /* Start invisible */
+    opacity: 0;
     transition: opacity 0.5s ease-in-out, filter 0.5s ease-in-out;
-    filter: none; /* Start with no drop shadow */
+    filter: none;
 }
 
 .logo-image.with-shadow {
@@ -419,12 +418,10 @@ header::before {
     z-index: 1;
 }
 
-/* Main content */
 main {
     padding: 4rem 0;
 }
 
-/* Navigation Styles */
 .main-nav {
     padding: 0;
     position: relative;
@@ -527,7 +524,6 @@ main {
     transform: scale(1.1);
 }
 
-/* Route Sections */
 .route-section {
     min-height: 60vh;
 }
@@ -598,7 +594,6 @@ main {
     color: #1b2838;
 }
 
-/* Upload Section */
 .character-backgrounds {
     position: fixed;
     top: 0;
@@ -694,7 +689,6 @@ main {
     filter: grayscale(100%);
 }
 
-/* Upload Section */
 .upload-section {
     background: rgba(250, 250, 250, 0.95);
     backdrop-filter: blur(10px);
@@ -706,7 +700,7 @@ main {
         inset 0 1px 0 rgba(0, 0, 0, 0.05);
     border: 1px solid #ddd;
     position: relative;
-    z-index: 2; /* Above the static noise */
+    z-index: 2;
 }
 
 .upload-section::before {
@@ -784,7 +778,7 @@ main {
         inset 0 1px 0 rgba(255, 255, 255, 0.5);
     text-transform: uppercase;
     letter-spacing: 1px;
-    font-family: 'Metal Mania', cursive;
+    font-family: 'Bubbly V3', 'Metal Mania', cursive;
 }
 
 .upload-btn:hover {
@@ -796,7 +790,23 @@ main {
     background: linear-gradient(45deg, #e0e0e0, #d0d0d0);
 }
 
-/* Preview section */
+.mutation-description {
+    margin-top: 1rem;
+    text-align: center;
+    font-family: 'Bubbly V3', 'Metal Mania', cursive;
+    color: #333;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    border: 2px solid #ccc;
+    backdrop-filter: blur(5px);
+}
+
+.mutation-description p {
+    margin: 0;
+    font-size: 1rem;
+}
+
 .preview-section {
     margin-top: 3rem;
 }
@@ -817,7 +827,7 @@ main {
     margin-bottom: 1rem;
     color: #333;
     font-size: 1.3rem;
-    font-family: 'Creepster', cursive;
+    font-family: 'Bubbly V3', 'Metal Mania', cursive;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
     letter-spacing: 1px;
 }
@@ -837,6 +847,22 @@ main {
     font-size: 2rem;
     color: #333;
     filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.3));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.arrow-icon {
+    width: 40px;
+    height: 40px;
+    filter: grayscale(1) brightness(0.6);
+    transform: rotate(90deg);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.6; transform: scale(1) rotate(90deg); }
+    50% { opacity: 1; transform: scale(1.1) rotate(90deg); }
 }
 
 .mutation-placeholder {
@@ -868,9 +894,18 @@ main {
 
 .loading-spinner {
     font-size: 2rem;
-    animation: spin 1s linear infinite;
     margin-bottom: 1rem;
     filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.5));
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.spinning-paw {
+    width: 32px;
+    height: 32px;
+    animation: spin 2s linear infinite;
+    filter: grayscale(1) brightness(0.8);
 }
 
 @keyframes spin {
@@ -889,7 +924,6 @@ main {
     border: 2px solid #ddd;
 }
 
-/* Controls */
 .controls {
     display: flex;
     gap: 1rem;
@@ -905,7 +939,7 @@ main {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
-    font-family: 'Metal Mania', cursive;
+    font-family: 'Bubbly V3', 'Metal Mania', cursive;
     text-transform: uppercase;
     letter-spacing: 1px;
     position: relative;
@@ -919,6 +953,17 @@ main {
     box-shadow: 
         0 4px 15px rgba(0, 0, 0, 0.1),
         inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: 'Bubbly V3', 'Metal Mania', cursive;
+}
+
+.btn-icon {
+    width: 20px;
+    height: 20px;
+    filter: brightness(0.3);
 }
 
 .mutate-btn:hover {
@@ -966,9 +1011,6 @@ main {
     background: linear-gradient(45deg, #eeeeee, #dedede);
 }
 
-/* Remove features section styles since we deleted the HTML */
-
-/* Footer */
 footer {
     background: rgba(250, 250, 250, 0.95);
     color: #000;
@@ -1004,13 +1046,18 @@ footer p {
     z-index: 1;
 }
 
+footer .contact-info {
+    opacity: 0.4;
+    font-size: 0.8em;
+    margin-top: 1rem;
+}
+
 footer small {
     opacity: 0.7;
     font-style: italic;
     color: #333;
 }
 
-/* Responsive design */
 @media (max-width: 768px) {
     .logo {
         font-size: 2rem;

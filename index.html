@@ -71,7 +71,7 @@
                 <div class="upload-area" id="uploadArea">
                     <div class="upload-content">
                         <h2>Upload Your Photo</h2>
-                        <p>Mewgenics-ify your cat (or any other animal)</p>
+                        <p>Mew-tate your cat (or anything, really)</p>
                         <input type="file" id="fileInput" accept="image/*" hidden>
                         <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
                             Choose Photo
@@ -82,12 +82,14 @@
                 <div class="preview-section" id="previewSection" style="display: none;">
                     <div class="image-container">
                         <div class="original-image">
-                            <h3>Original Cat</h3>
-                            <img id="originalImage" alt="Original cat photo">
+                            <h3>Original</h3>
+                            <img id="originalImage" alt="Original photo">
                         </div>
-                        <div class="arrow">➡️</div>
+                        <div class="arrow">
+                            <img src="assets/images/mewgenicspaw.png" alt="transformation arrow" class="arrow-icon">
+                        </div>
                         <div class="mutated-image">
-                            <h3>Mutated Cat</h3>
+                            <h3>Mutated</h3>
                             <div class="mutation-placeholder" id="mutatedResult">
                                 <div class="loading-spinner" style="display: none;">🔄</div>
                                 <div class="mutation-text">Click "Mutate" to transform!</div>
@@ -97,13 +99,10 @@
                     
                     <div class="controls">
                         <button class="mutate-btn" id="mutateBtn" onclick="mutateCat()">
-                            MUTATE MY CAT
-                        </button>
-                        <button class="download-btn" id="downloadBtn" style="display: none;" onclick="downloadResult()">
-                            📥 DOWNLOAD ABOMINATION
+                            <img src="assets/images/mewgenicspaw.png" alt="" class="btn-icon"> MUTATE
                         </button>
                         <button class="reset-btn" onclick="resetUpload()">
-                            🗑️ DISPOSE & RESTART
+                            DISPOSE & RESTART
                         </button>
                     </div>
                 </div>
@@ -119,7 +118,7 @@
                     <div class="wishlist-content">
                         <div class="game-item">
                             <h3>Mewgenics</h3>
-                            <p>The upcoming cat genetics simulation game by Edmund McMillen and Tyler Glaiel.</p>
+                            <p>Is it a roguelike? Roguelite? Neither? BOTH?!</p>
                             <div class="wishlist-stats" id="wishlistStats">
                                 <p>Loading wishlist ranking...</p>
                             </div>
@@ -163,6 +162,7 @@
         <div class="container">
             <p><small>Based on the game Mewgenics by Edmund McMillen and Tyler Glaiel. All rights go to them.</small></p>
             <p><small>Wishlist Mewgenics on Steam!</small></p>
+            <p class="contact-info"><small>Contact me: kleinschmidtcole@gmail.com</small></p>
         </div>
     </footer>
 
