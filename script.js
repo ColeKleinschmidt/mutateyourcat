@@ -89,6 +89,14 @@ class PixelDrawingSystem {
         this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
         this.canvas.style.cursor = 'grab'; // Default to grab cursor
         
+        // Show loading state
+        const container = this.canvas.parentElement;
+        const loadingDiv = document.createElement('div');
+        loadingDiv.id = 'canvas-loading';
+        loadingDiv.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.2rem; color: #666;';
+        loadingDiv.textContent = 'Loading canvas...';
+        container.appendChild(loadingDiv);
+        
         // Check if Firebase is available
         this.firebaseEnabled = pixelsRef !== null;
         
@@ -111,6 +119,11 @@ class PixelDrawingSystem {
         this.catImage.src = 'assets/images/drawcatface.jpg';
         this.catImage.onload = () => {
             console.log('Cat image loaded successfully');
+            
+            // Remove loading indicator
+            const loadingDiv = document.getElementById('canvas-loading');
+            if (loadingDiv) loadingDiv.remove();
+            
             this.canvas.width = this.catImage.width;
             this.canvas.height = this.catImage.height;
             
@@ -550,13 +563,48 @@ class PixelDrawingSystem {
         // Initialize pixelData if not already
         if (!this.pixelData) this.pixelData = {};
         
-        // Listen for new pixels from other users
+        let initialLoadComplete = false;
+        let batchedUpdates = false;
+        
+        // Load all existing pixels once at startup
+        pixelsRef.once('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                this.pixelData = data;
+                console.log(`Loaded ${Object.keys(data).length} existing pixels from Firebase`);
+            }
+            this.render();
+            initialLoadComplete = true;
+            
+            // Remove loading indicator
+            const loadingDiv = document.getElementById('canvas-loading');
+            if (loadingDiv) {
+                loadingDiv.textContent = 'Loading pixels...';
+                setTimeout(() => loadingDiv.remove(), 100);
+            }
+        }).catch(error => {
+            console.error('Firebase load error:', error);
+            initialLoadComplete = true;
+            const loadingDiv = document.getElementById('canvas-loading');
+            if (loadingDiv) loadingDiv.remove();
+        });
+        
+        // Listen for new pixels from other users (only after initial load)
         pixelsRef.on('child_added', (snapshot) => {
+            if (!initialLoadComplete) return; // Skip during initial load
             const key = snapshot.key;
             const color = snapshot.val();
             if (this.pixelData[key] !== color) {
                 this.pixelData[key] = color;
-                this.render();
+                
+                // Batch renders to avoid too many redraws
+                if (!batchedUpdates) {
+                    batchedUpdates = true;
+                    requestAnimationFrame(() => {
+                        this.render();
+                        batchedUpdates = false;
+                    });
+                }
             }
         });
         
@@ -565,14 +613,28 @@ class PixelDrawingSystem {
             const key = snapshot.key;
             const color = snapshot.val();
             this.pixelData[key] = color;
-            this.render();
+            
+            if (!batchedUpdates) {
+                batchedUpdates = true;
+                requestAnimationFrame(() => {
+                    this.render();
+                    batchedUpdates = false;
+                });
+            }
         });
         
         // Listen for pixel removals
         pixelsRef.on('child_removed', (snapshot) => {
             const key = snapshot.key;
             delete this.pixelData[key];
-            this.render();
+            
+            if (!batchedUpdates) {
+                batchedUpdates = true;
+                requestAnimationFrame(() => {
+                    this.render();
+                    batchedUpdates = false;
+                });
+            }
         });
         
         console.log('Firebase listeners active - live multiplayer enabled!');
