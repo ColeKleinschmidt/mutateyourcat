@@ -46,8 +46,8 @@ class PixelDrawingSystem {
         this.isDrawing = false;
         this.lastX = 0;
         this.lastY = 0;
-        this.pixelsRemaining = 500;
-        this.maxPixels = 500;
+        this.pixelsRemaining = 50;
+        this.maxPixels = 50;
         this.cooldownEnd = null;
         this.pixelSize = 16; // Size of each "pixel" the user places
         this.currentTool = 'hand'; // 'place' or 'hand'
@@ -110,6 +110,7 @@ class PixelDrawingSystem {
         this.catImage.crossOrigin = 'anonymous';
         this.catImage.src = 'assets/images/drawcatface.jpg';
         this.catImage.onload = () => {
+            console.log('Cat image loaded successfully');
             this.canvas.width = this.catImage.width;
             this.canvas.height = this.catImage.height;
             
@@ -134,6 +135,9 @@ class PixelDrawingSystem {
             this.drawingCircle4.radius = 400;
             
             this.render();
+        };
+        this.catImage.onerror = () => {
+            console.error('Failed to load cat image from assets/images/drawcatface.jpg');
         };
     }
     
@@ -342,7 +346,7 @@ class PixelDrawingSystem {
         }
         
         // Show preview only in place mode
-        if (this.currentTool === 'place' && this.isInsideDrawingArea(coords.x, coords.y)) {
+        if (this.currentTool === 'place' && this.isInsideDrawingArea(coords.x, coords.y) && this.pixelsRemaining > 0) {
             this.showPreview(e, coords);
         } else {
             this.hidePreview();
@@ -403,6 +407,11 @@ class PixelDrawingSystem {
             return;
         }
         
+        if (this.pixelsRemaining <= 0) {
+            alert('No pixels remaining! Wait for the cooldown to finish.');
+            return;
+        }
+        
         this.placePixel(coords.x, coords.y);
     }
     
@@ -414,18 +423,32 @@ class PixelDrawingSystem {
         // Silently ignore if outside drawing area
         if (!this.isInsideDrawingArea(x, y)) return;
         
+        if (this.pixelsRemaining <= 0) return;
+        
         // Check if this is a new pixel placement
         if (!this.pixelData) this.pixelData = {};
         const key = `${x},${y}`;
         const existingColor = this.pixelData[key];
         
-        // If pixel already exists with same color, don't do anything
+        // If pixel already exists with same color, don't decrement count
         const isNewPixel = !existingColor || existingColor !== this.selectedColor;
-        
-        if (!isNewPixel) return;
         
         // Store pixel data
         this.pixelData[key] = this.selectedColor;
+        
+        // Only decrease pixel count for new/changed pixels
+        if (isNewPixel) {
+            this.pixelsRemaining--;
+            this.updatePixelCount();
+            
+            // If this is the first pixel placed, start cooldown
+            if (this.pixelsRemaining === this.maxPixels - 1 && !this.cooldownEnd) {
+                this.startCooldown();
+            }
+            
+            // Save data
+            this.saveCooldownData();
+        }
         
         // Save to Firebase or localStorage
         if (this.firebaseEnabled && pixelsRef) {
@@ -475,7 +498,7 @@ class PixelDrawingSystem {
     }
     
     updatePixelCount() {
-        document.getElementById('pixelCount').textContent = '∞';
+        document.getElementById('pixelCount').textContent = this.pixelsRemaining;
     }
     
     savePixelData() {
