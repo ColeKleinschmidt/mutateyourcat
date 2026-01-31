@@ -10,6 +10,10 @@
     <link rel="apple-touch-icon" href="./assets/images/stacyface.png">
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Metal+Mania&family=Nosifer&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 </head>
 <body>
     <div class="cat-prints">
@@ -44,7 +48,8 @@
             </div>
             <nav class="main-nav">
                 <ul class="nav-menu">
-                    <li><a href="#" class="nav-link active" data-route="mutations"><img src="assets/images/mutate.png" alt="Cat Mutations"></a></li>
+                    <li><a href="#" class="nav-link active" data-route="draw"><img src="assets/images/draw.png" alt="Draw"></a></li>
+                    <li><a href="#" class="nav-link" data-route="mutations"><img src="assets/images/mutate.png" alt="Cat Mutations"></a></li>
                     <li><a href="#" class="nav-link" data-route="wishlists"><img src="assets/images/wishlist.png" alt="Wishlists"></a></li>
                     <li><a href="#" class="nav-link" data-route="credits"><img src="assets/images/art.png" alt="Artist Credits"></a></li>
                     <li><a href="#" class="nav-link" data-route="meow"><img src="assets/images/meow.png" alt="Meow"></a></li>
@@ -64,6 +69,73 @@
     </header>
 
     <main>
+        <!-- Draw Route -->
+        <div class="route-section active" id="draw-route">
+            <div class="container">
+                <div class="draw-container">
+                    <div class="draw-disclaimer">
+                        <p>Be respectful! No hate speech, offensive symbols, or harmful content. Have fun!</p>
+                    </div>
+                    
+                    <div class="draw-interface">
+                        <div class="draw-sidebar">
+                            <div class="pixels-counter">
+                                <h3>Pixels Remaining</h3>
+                                <div class="pixel-count" id="pixelCount">5</div>
+                                <div class="cooldown-timer" id="cooldownTimer"></div>
+                            </div>
+                            
+                            <div class="color-picker-section">
+                                <h3>Choose Color</h3>
+                                <div class="color-presets" id="colorPresets">
+                                    <button class="color-btn" data-color="#FF0000" style="background: #FF0000;" title="Red"></button>
+                                    <button class="color-btn" data-color="#FF8800" style="background: #FF8800;" title="Orange"></button>
+                                    <button class="color-btn" data-color="#FFFF00" style="background: #FFFF00;" title="Yellow"></button>
+                                    <button class="color-btn" data-color="#00FF00" style="background: #00FF00;" title="Lime"></button>
+                                    <button class="color-btn" data-color="#00FFFF" style="background: #00FFFF;" title="Cyan"></button>
+                                    <button class="color-btn" data-color="#0088FF" style="background: #0088FF;" title="Blue"></button>
+                                    <button class="color-btn" data-color="#8800FF" style="background: #8800FF;" title="Purple"></button>
+                                    <button class="color-btn" data-color="#FF00FF" style="background: #FF00FF;" title="Magenta"></button>
+                                    <button class="color-btn" data-color="#FFFFFF" style="background: #FFFFFF; border: 2px solid #ccc;" title="White"></button>
+                                    <button class="color-btn" data-color="#CCCCCC" style="background: #CCCCCC;" title="Light Gray"></button>
+                                    <button class="color-btn" data-color="#888888" style="background: #888888;" title="Gray"></button>
+                                    <button class="color-btn" data-color="#000000" style="background: #000000;" title="Black"></button>
+                                    <button class="color-btn" data-color="#8B4513" style="background: #8B4513;" title="Brown"></button>
+                                    <button class="color-btn" data-color="#FFB6C1" style="background: #FFB6C1;" title="Pink"></button>
+                                    <button class="color-btn" data-color="#4B0082" style="background: #4B0082;" title="Indigo"></button>
+                                    <button class="color-btn active" data-color="#0000FF" style="background: #0000FF;" title="Blue"></button>
+                                </div>
+                                <div class="custom-color">
+                                    <label for="customColorPicker">Custom Color:</label>
+                                    <input type="color" id="customColorPicker" value="#0000FF">
+                                </div>
+                                <div class="selected-color">
+                                    <span>Selected:</span>
+                                    <div class="color-display" id="selectedColor" style="background: #0000FF;"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="tool-selection">
+                                <h3>Tools</h3>
+                                <button id="placeTool" class="tool-btn"><img src="assets/images/pencil.png" alt="Place Pixel" style="width: 24px; height: 24px;"></button>
+                                <button id="handTool" class="tool-btn active"><img src="assets/images/hand.png" alt="Pan Canvas" style="width: 24px; height: 24px;"></button>
+                            </div>
+                            
+                            <div class="zoom-controls">
+                                <div class="zoom-level">Zoom: <span id="zoomLevel">100%</span></div>
+                                <div class="zoom-hint">Use scroll wheel to zoom</div>
+                            </div>
+                        </div>
+                        
+                        <div class="canvas-container">
+                            <canvas id="drawCanvas"></canvas>
+                            <div class="pixel-preview" id="pixelPreview"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Cat Mutations Route -->
         <div class="route-section" id="mutations-route">
             <div class="container">

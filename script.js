@@ -5,6 +5,558 @@ let mutationComplete = false;
 let currentMutationData = null;
 let catFaceEnabled = true;
 
+// ===== FIREBASE CONFIGURATION =====
+const firebaseConfig = {
+    apiKey: "AIzaSyDM8NkaXevjYtW5HTBpvNruzaVodsAPfJs",
+    authDomain: "mutateyourcat.firebaseapp.com",
+    databaseURL: "https://mutateyourcat-default-rtdb.firebaseio.com", // Add this from Firebase Console if different
+    projectId: "mutateyourcat",
+    storageBucket: "mutateyourcat.firebasestorage.app",
+    messagingSenderId: "751831187251",
+    appId: "1:751831187251:web:e9a42fbea52bf4ea7a0846",
+    measurementId: "G-39VDGC5M63"
+};
+
+// Initialize Firebase
+let firebaseApp = null;
+let database = null;
+let pixelsRef = null;
+
+try {
+    firebaseApp = firebase.initializeApp(firebaseConfig);
+    database = firebase.database();
+    pixelsRef = database.ref('pixels');
+    console.log('Firebase initialized successfully');
+} catch (error) {
+    console.warn('Firebase not configured. Running in local mode.', error);
+}
+
+// ===== DRAW FUNCTIONALITY =====
+class PixelDrawingSystem {
+    constructor() {
+        this.canvas = null;
+        this.ctx = null;
+        this.catImage = new Image();
+        this.pixelData = null;
+        this.selectedColor = '#0000FF';
+        this.zoom = 1;
+        this.panX = 0;
+        this.panY = 0;
+        this.isDragging = false;
+        this.lastX = 0;
+        this.lastY = 0;
+        this.pixelsRemaining = 100;
+        this.maxPixels = 100;
+        this.cooldownEnd = null;
+        this.pixelSize = 4; // Size of each "pixel" the user places
+        this.currentTool = 'hand'; // 'place' or 'hand'
+        this.firebaseEnabled = false;
+        
+        // Circle drawing area (will be positioned on cat's face)
+        this.drawingCircle = {
+            centerX: 0,
+            centerY: 0,
+            radius: 450
+        };
+        
+        // Second smaller drawing circle
+        this.drawingCircle2 = {
+            centerX: 0,
+            centerY: 0,
+            radius: 200
+        };
+        
+        // Third drawing circle
+        this.drawingCircle3 = {
+            centerX: 0,
+            centerY: 0,
+            radius: 180
+        };
+        
+        // Fourth drawing circle
+        this.drawingCircle4 = {
+            centerX: 0,
+            centerY: 0,
+            radius: 150
+        };
+    }
+    
+    init() {
+        this.canvas = document.getElementById('drawCanvas');
+        if (!this.canvas) return;
+        
+        this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
+        this.canvas.style.cursor = 'grab'; // Default to grab cursor
+        
+        // Check if Firebase is available
+        this.firebaseEnabled = pixelsRef !== null;
+        
+        if (this.firebaseEnabled) {
+            console.log('Using Firebase for live updates');
+            this.setupFirebaseListeners();
+        } else {
+            console.log('Using localStorage (offline mode)');
+            this.loadPixelData();
+        }
+        
+        this.loadCooldownData();
+        this.setupEventListeners();
+        this.loadCatImage();
+        this.startCooldownTimer();
+    }
+    
+    loadCatImage() {
+        this.catImage.crossOrigin = 'anonymous';
+        this.catImage.src = 'assets/images/drawcatface.jpg';
+        this.catImage.onload = () => {
+            this.canvas.width = this.catImage.width;
+            this.canvas.height = this.catImage.height;
+            
+            // Position circle: 10% to the left and 10% down from center
+            this.drawingCircle.centerX = this.canvas.width / 2 + (this.canvas.width * 0.07);
+            this.drawingCircle.centerY = this.canvas.height / 2 - (this.canvas.height * 0.06);
+            this.drawingCircle.radius = 590; // 3x the original 150
+            
+            // Position second smaller circle
+            this.drawingCircle2.centerX = this.canvas.width / 2 - (this.canvas.width * 0.11);
+            this.drawingCircle2.centerY = this.canvas.height / 2 -(this.canvas.height * 0.19);
+            this.drawingCircle2.radius = 300;
+            
+            // Position third circle
+            this.drawingCircle3.centerX = this.canvas.width / 2 + (this.canvas.width * 0.14);
+            this.drawingCircle3.centerY = this.canvas.height / 2 - (this.canvas.height * 0.115);
+            this.drawingCircle3.radius = 330;
+            
+            // Position fourth circle
+            this.drawingCircle4.centerX = this.canvas.width / 2 - (this.canvas.width * 0.03);
+            this.drawingCircle4.centerY = this.canvas.height / 2 - (this.canvas.height * 0.06);
+            this.drawingCircle4.radius = 400;
+            
+            this.render();
+        };
+    }
+    
+    render() {
+        if (!this.ctx || !this.catImage.complete) return;
+        
+        // Clear canvas
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Draw cat image
+        this.ctx.drawImage(this.catImage, 0, 0);
+        
+        // Draw placed pixels
+        if (this.pixelData) {
+            const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+            const data = imageData.data;
+            
+            for (let key in this.pixelData) {
+                const [x, y] = key.split(',').map(Number);
+                const color = this.pixelData[key];
+                const rgb = this.hexToRgb(color);
+                
+                // Draw a pixelSize x pixelSize block
+                for (let dy = 0; dy < this.pixelSize; dy++) {
+                    for (let dx = 0; dx < this.pixelSize; dx++) {
+                        const px = x + dx;
+                        const py = y + dy;
+                        if (px < this.canvas.width && py < this.canvas.height) {
+                            const index = (py * this.canvas.width + px) * 4;
+                            data[index] = rgb.r;
+                            data[index + 1] = rgb.g;
+                            data[index + 2] = rgb.b;
+                            data[index + 3] = 255;
+                        }
+                    }
+                }
+            }
+            
+            this.ctx.putImageData(imageData, 0, 0);
+        }
+        
+        // Circles hidden - uncomment to show drawing area boundaries
+        /*
+        this.ctx.strokeStyle = '#0088FF';
+        this.ctx.lineWidth = 3;
+        this.ctx.setLineDash([10, 5]);
+        this.ctx.beginPath();
+        this.ctx.arc(this.drawingCircle.centerX, this.drawingCircle.centerY, this.drawingCircle.radius, 0, Math.PI * 2);
+        this.ctx.stroke();
+        
+        this.ctx.beginPath();
+        this.ctx.arc(this.drawingCircle2.centerX, this.drawingCircle2.centerY, this.drawingCircle2.radius, 0, Math.PI * 2);
+        this.ctx.stroke();
+        
+        this.ctx.beginPath();
+        this.ctx.arc(this.drawingCircle3.centerX, this.drawingCircle3.centerY, this.drawingCircle3.radius, 0, Math.PI * 2);
+        this.ctx.stroke();
+        
+        this.ctx.beginPath();
+        this.ctx.arc(this.drawingCircle4.centerX, this.drawingCircle4.centerY, this.drawingCircle4.radius, 0, Math.PI * 2);
+        this.ctx.stroke();
+        this.ctx.setLineDash([]);
+        */
+    }
+    
+    setupEventListeners() {
+        // Tool selection
+        document.getElementById('placeTool').addEventListener('click', () => {
+            this.currentTool = 'place';
+            document.getElementById('placeTool').classList.add('active');
+            document.getElementById('handTool').classList.remove('active');
+            this.canvas.style.cursor = 'crosshair';
+        });
+        
+        document.getElementById('handTool').addEventListener('click', () => {
+            this.currentTool = 'hand';
+            document.getElementById('handTool').classList.add('active');
+            document.getElementById('placeTool').classList.remove('active');
+            this.canvas.style.cursor = 'grab';
+        });
+        
+        // Color selection
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.selectedColor = btn.dataset.color;
+                document.getElementById('selectedColor').style.background = this.selectedColor;
+                document.getElementById('customColorPicker').value = this.selectedColor;
+            });
+        });
+        
+        // Custom color picker
+        document.getElementById('customColorPicker').addEventListener('input', (e) => {
+            this.selectedColor = e.target.value;
+            document.getElementById('selectedColor').style.background = this.selectedColor;
+            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+        });
+        
+        // Canvas interactions
+        this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+        this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+        this.canvas.addEventListener('mouseup', () => this.handleMouseUp());
+        this.canvas.addEventListener('mouseleave', () => this.hidePreview());
+        this.canvas.addEventListener('click', (e) => this.handleClick(e));
+        this.canvas.addEventListener('contextmenu', (e) => e.preventDefault()); // Prevent right-click menu
+        this.canvas.addEventListener('wheel', (e) => this.handleWheel(e)); // Scroll wheel zoom
+        
+        // Touch support
+        this.canvas.addEventListener('touchstart', (e) => this.handleTouchStart(e));
+        this.canvas.addEventListener('touchmove', (e) => this.handleTouchMove(e));
+        this.canvas.addEventListener('touchend', () => this.handleMouseUp());
+    }
+    
+    handleWheel(e) {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? 0.9 : 1.1;
+        this.adjustZoom(delta);
+    }
+    
+    updateTransform() {
+        this.canvas.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.zoom})`;
+    }
+    
+    adjustZoom(factor) {
+        this.zoom *= factor;
+        this.zoom = Math.max(0.5, Math.min(20, this.zoom));
+        this.updateTransform();
+        document.getElementById('zoomLevel').textContent = `${Math.round(this.zoom * 100)}%`;
+    }
+    
+    resetZoom() {
+        this.zoom = 1;
+        this.panX = 0;
+        this.panY = 0;
+        this.updateTransform();
+        document.getElementById('zoomLevel').textContent = '100%';
+    }
+    
+    getCanvasCoordinates(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+        
+        return {
+            x: Math.floor((e.clientX - rect.left) * scaleX),
+            y: Math.floor((e.clientY - rect.top) * scaleY)
+        };
+    }
+    
+    isInsideDrawingArea(x, y) {
+        // Check first circle
+        const dx1 = x - this.drawingCircle.centerX;
+        const dy1 = y - this.drawingCircle.centerY;
+        const inCircle1 = (dx1 * dx1 + dy1 * dy1) <= (this.drawingCircle.radius * this.drawingCircle.radius);
+        
+        // Check second circle
+        const dx2 = x - this.drawingCircle2.centerX;
+        const dy2 = y - this.drawingCircle2.centerY;
+        const inCircle2 = (dx2 * dx2 + dy2 * dy2) <= (this.drawingCircle2.radius * this.drawingCircle2.radius);
+        
+        // Check third circle
+        const dx3 = x - this.drawingCircle3.centerX;
+        const dy3 = y - this.drawingCircle3.centerY;
+        const inCircle3 = (dx3 * dx3 + dy3 * dy3) <= (this.drawingCircle3.radius * this.drawingCircle3.radius);
+        
+        // Check fourth circle
+        const dx4 = x - this.drawingCircle4.centerX;
+        const dy4 = y - this.drawingCircle4.centerY;
+        const inCircle4 = (dx4 * dx4 + dy4 * dy4) <= (this.drawingCircle4.radius * this.drawingCircle4.radius);
+        
+        return inCircle1 || inCircle2 || inCircle3 || inCircle4;
+    }
+    
+    handleMouseDown(e) {
+        if (this.currentTool === 'hand' || e.button === 1 || e.button === 2 || e.shiftKey) {
+            this.isDragging = true;
+            this.lastX = e.clientX;
+            this.lastY = e.clientY;
+            this.canvas.style.cursor = 'grabbing';
+            e.preventDefault();
+        }
+    }
+    
+    handleMouseMove(e) {
+        const coords = this.getCanvasCoordinates(e);
+        
+        if (this.isDragging) {
+            const deltaX = e.clientX - this.lastX;
+            const deltaY = e.clientY - this.lastY;
+            this.panX += deltaX;
+            this.panY += deltaY;
+            this.lastX = e.clientX;
+            this.lastY = e.clientY;
+            this.updateTransform();
+            return;
+        }
+        
+        // Show preview only in place mode
+        if (this.currentTool === 'place' && this.isInsideDrawingArea(coords.x, coords.y) && this.pixelsRemaining > 0) {
+            this.showPreview(e, coords);
+        } else {
+            this.hidePreview();
+        }
+    }
+    
+    handleMouseUp() {
+        this.isDragging = false;
+        if (this.currentTool === 'hand') {
+            this.canvas.style.cursor = 'grab';
+        } else {
+            this.canvas.style.cursor = 'crosshair';
+        }
+    }
+    
+    handleTouchStart(e) {
+        if (e.touches.length === 1) {
+            const touch = e.touches[0];
+            const coords = this.getCanvasCoordinates(touch);
+            this.placePixel(coords.x, coords.y);
+            e.preventDefault();
+        }
+    }
+    
+    handleTouchMove(e) {
+        e.preventDefault();
+    }
+    
+    showPreview(e, coords) {
+        const preview = document.getElementById('pixelPreview');
+        preview.classList.add('active');
+        preview.style.left = `${e.clientX + 15}px`;
+        preview.style.top = `${e.clientY + 15}px`;
+        preview.style.background = this.selectedColor;
+    }
+    
+    hidePreview() {
+        document.getElementById('pixelPreview').classList.remove('active');
+    }
+    
+    handleClick(e) {
+        if (this.isDragging || this.currentTool === 'hand') return;
+        
+        const coords = this.getCanvasCoordinates(e);
+        
+        // Silently ignore clicks outside drawing area
+        if (!this.isInsideDrawingArea(coords.x, coords.y)) {
+            return;
+        }
+        
+        if (this.pixelsRemaining <= 0) {
+            alert('No pixels remaining! Wait for the cooldown to finish.');
+            return;
+        }
+        
+        this.placePixel(coords.x, coords.y);
+    }
+    
+    placePixel(x, y) {
+        // Snap to pixel grid
+        x = Math.floor(x / this.pixelSize) * this.pixelSize;
+        y = Math.floor(y / this.pixelSize) * this.pixelSize;
+        
+        // Silently ignore if outside drawing area
+        if (!this.isInsideDrawingArea(x, y)) return;
+        
+        if (this.pixelsRemaining <= 0) return;
+        
+        // Check if this is a new pixel placement
+        if (!this.pixelData) this.pixelData = {};
+        const key = `${x},${y}`;
+        const existingColor = this.pixelData[key];
+        
+        // If pixel already exists with same color, don't decrement count
+        const isNewPixel = !existingColor || existingColor !== this.selectedColor;
+        
+        // Store pixel data
+        this.pixelData[key] = this.selectedColor;
+        
+        // Only decrease pixel count for new/changed pixels
+        if (isNewPixel) {
+            this.pixelsRemaining--;
+            this.updatePixelCount();
+            
+            // If this is the first pixel placed, start cooldown
+            if (this.pixelsRemaining === this.maxPixels - 1 && !this.cooldownEnd) {
+                this.startCooldown();
+            }
+            
+            // Save data
+            this.saveCooldownData();
+        }
+        
+        // Save to Firebase or localStorage
+        if (this.firebaseEnabled && pixelsRef) {
+            // Save to Firebase (will trigger updates for all users)
+            pixelsRef.child(key).set(this.selectedColor).catch(error => {
+                console.error('Firebase error:', error);
+                // Fallback to localStorage if Firebase fails
+                this.savePixelData();
+            });
+        } else {
+            // Fallback to localStorage
+            this.savePixelData();
+        }
+        
+        // Re-render
+        this.render();
+    }
+    
+    startCooldown() {
+        this.cooldownEnd = Date.now() + (60 * 60 * 1000); // 1 hour
+        this.saveCooldownData();
+    }
+    
+    startCooldownTimer() {
+        setInterval(() => {
+            if (this.cooldownEnd && Date.now() >= this.cooldownEnd) {
+                this.pixelsRemaining = this.maxPixels;
+                this.cooldownEnd = null;
+                this.updatePixelCount();
+                this.saveCooldownData();
+            }
+            this.updateCooldownDisplay();
+        }, 1000);
+    }
+    
+    updateCooldownDisplay() {
+        const timerEl = document.getElementById('cooldownTimer');
+        if (!this.cooldownEnd || Date.now() >= this.cooldownEnd) {
+            timerEl.textContent = '';
+            return;
+        }
+        
+        const remaining = this.cooldownEnd - Date.now();
+        const minutes = Math.floor(remaining / 60000);
+        const seconds = Math.floor((remaining % 60000) / 1000);
+        timerEl.textContent = `Next refill in ${minutes}m ${seconds}s`;
+    }
+    
+    updatePixelCount() {
+        document.getElementById('pixelCount').textContent = this.pixelsRemaining;
+    }
+    
+    savePixelData() {
+        localStorage.setItem('pixelDrawingData', JSON.stringify(this.pixelData));
+    }
+    
+    loadPixelData() {
+        const saved = localStorage.getItem('pixelDrawingData');
+        if (saved) {
+            this.pixelData = JSON.parse(saved);
+        }
+    }
+    
+    saveCooldownData() {
+        localStorage.setItem('pixelCooldown', JSON.stringify({
+            pixelsRemaining: this.pixelsRemaining,
+            cooldownEnd: this.cooldownEnd
+        }));
+    }
+    
+    loadCooldownData() {
+        const saved = localStorage.getItem('pixelCooldown');
+        if (saved) {
+            const data = JSON.parse(saved);
+            this.pixelsRemaining = data.pixelsRemaining;
+            this.cooldownEnd = data.cooldownEnd;
+            
+            // Check if cooldown has expired
+            if (this.cooldownEnd && Date.now() >= this.cooldownEnd) {
+                this.pixelsRemaining = this.maxPixels;
+                this.cooldownEnd = null;
+            }
+        }
+        this.updatePixelCount();
+    }
+    
+    hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : { r: 0, g: 0, b: 0 };
+    }
+    
+    setupFirebaseListeners() {
+        if (!pixelsRef) return;
+        
+        // Initialize pixelData if not already
+        if (!this.pixelData) this.pixelData = {};
+        
+        // Listen for new pixels from other users
+        pixelsRef.on('child_added', (snapshot) => {
+            const key = snapshot.key;
+            const color = snapshot.val();
+            if (this.pixelData[key] !== color) {
+                this.pixelData[key] = color;
+                this.render();
+            }
+        });
+        
+        // Listen for pixel changes from other users
+        pixelsRef.on('child_changed', (snapshot) => {
+            const key = snapshot.key;
+            const color = snapshot.val();
+            this.pixelData[key] = color;
+            this.render();
+        });
+        
+        // Listen for pixel removals
+        pixelsRef.on('child_removed', (snapshot) => {
+            const key = snapshot.key;
+            delete this.pixelData[key];
+            this.render();
+        });
+        
+        console.log('Firebase listeners active - live multiplayer enabled!');
+    }
+}
+
+let pixelDrawingSystem = null;
+
 document.addEventListener('DOMContentLoaded', function() {
     if (!fileUploadInitialized) {
         initializeFileUpload();
@@ -14,6 +566,10 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeRouting();
     fetchMewgenicsWishlistData();
     initializeBackgroundMusic();
+    
+    // Initialize pixel drawing system
+    pixelDrawingSystem = new PixelDrawingSystem();
+    pixelDrawingSystem.init();
 });
 
 function initializeBackgroundMusic() {
@@ -292,8 +848,15 @@ function initializeRouting() {
             routeSections.forEach(section => {
                 if (section.id === `${route}-route`) {
                     section.style.display = 'block';
+                    section.classList.add('active');
+                    
+                    // Initialize draw system when switching to draw route
+                    if (route === 'draw' && pixelDrawingSystem) {
+                        pixelDrawingSystem.render();
+                    }
                 } else {
                     section.style.display = 'none';
+                    section.classList.remove('active');
                 }
             });
         });

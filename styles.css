@@ -480,19 +480,20 @@ main {
 }
 
 .music-controls {
-    position: absolute;
-    top: 1rem;
-    right: 0.5rem;
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: flex-end;
     gap: 0.5rem;
+    z-index: 1000;
 }
 
 .music-buttons {
     display: flex;
     gap: 5px;
-    align-self: flex-start;
+    align-self: flex-end;
 }
 
 .now-playing {
@@ -500,7 +501,7 @@ main {
     font-family: 'Bubbly V3', 'Metal Mania', cursive;
     text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.7);
     margin-bottom: 0;
-    text-align: left;
+    text-align: right;
     width: 200px;
 }
 
@@ -526,6 +527,11 @@ main {
 
 .route-section {
     min-height: 60vh;
+    display: none;
+}
+
+.route-section.active {
+    display: block;
 }
 
 .content-section {
@@ -1124,5 +1130,368 @@ footer small {
     
     .feature-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+/* ===== DRAW ROUTE STYLES ===== */
+.draw-container {
+    max-width: 1400px;
+    margin: 2rem auto;
+    padding: 2rem;
+    position: relative;
+    z-index: 2;
+}
+
+.draw-container::before {
+    content: '';
+    position: absolute;
+    top: -2rem;
+    left: -2rem;
+    right: -2rem;
+    bottom: -2rem;
+    background: white;
+    z-index: -1;
+    border-radius: 20px;
+}
+
+.draw-disclaimer {
+    background: linear-gradient(135deg, #1a1a1a 0%, #4a4a4a 50%, #ffffff 100%);
+    background-size: 200% 200%;
+    color: white;
+    padding: 1.5rem;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), inset 0 1px 3px rgba(255, 255, 255, 0.1);
+    text-align: center;
+    font-family: 'Bubbly V3', sans-serif;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    position: relative;
+    overflow: hidden;
+}
+
+.draw-disclaimer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0, 0, 0, 0.1) 2px, rgba(0, 0, 0, 0.1) 4px),
+        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 255, 255, 0.05) 2px, rgba(255, 255, 255, 0.05) 4px);
+    pointer-events: none;
+    opacity: 0.3;
+}
+
+.draw-disclaimer p {
+    position: relative;
+    z-index: 1;
+}
+
+.draw-interface {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+
+.draw-sidebar {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 2rem;
+}
+
+.draw-sidebar h3 {
+    font-family: 'Bubbly V3', sans-serif;
+    color: #000000;
+    margin-bottom: 1rem;
+    font-size: 1.3rem;
+}
+
+.pixels-counter {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.pixel-count {
+    font-size: 4rem;
+    font-weight: bold;
+    color: #000000;
+    margin: 0.5rem 0;
+}
+
+.cooldown-timer {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 0.5rem;
+    min-height: 20px;
+}
+
+.color-picker-section {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.color-presets {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 1rem;
+}
+
+.color-btn {
+    width: 100%;
+    height: 50px;
+    border: 3px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.color-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.color-btn.active {
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+}
+
+.custom-color {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.custom-color label {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+#customColorPicker {
+    width: 50px;
+    height: 50px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.selected-color {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.color-display {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    border: 2px solid #ddd;
+}
+
+.tool-selection {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.tool-btn {
+    padding: 1.2rem;
+    background: white;
+    color: #333;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-family: 'Bubbly V3', sans-serif;
+    font-size: 2rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tool-btn:hover {
+    border-color: #667eea;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+}
+
+.tool-btn.active {
+    background: white;
+    color: #333;
+    border: 3px solid;
+    border-image: linear-gradient(135deg, #888 0%, #000 100%) 1;
+    box-shadow: none;
+}
+
+.zoom-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.zoom-hint {
+    text-align: center;
+    font-size: 0.8rem;
+    color: #999;
+    margin-top: 0.5rem;
+    font-style: italic;
+}
+
+.canvas-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 2px solid #f0f0f0;
+}
+
+.reset-btn {
+    padding: 0.8rem;
+    background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Bubbly V3', sans-serif;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.reset-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 68, 68, 0.4);
+}
+
+.reset-btn:active {
+    transform: translateY(0);
+}
+
+.reset-count-btn {
+    padding: 0.8rem;
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Bubbly V3', sans-serif;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 0.5rem;
+}
+
+.reset-count-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+}
+
+.reset-count-btn:active {
+    transform: translateY(0);
+}
+
+.zoom-btn {
+    padding: 0.8rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Bubbly V3', sans-serif;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.zoom-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.zoom-btn:active {
+    transform: translateY(0);
+}
+
+.zoom-level {
+    text-align: center;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: #666;
+    font-weight: bold;
+}
+
+.canvas-container {
+    position: relative;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 600px;
+    overflow: auto;
+}
+
+#drawCanvas {
+    max-width: 100%;
+    max-height: 800px;
+    cursor: crosshair;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+}
+
+.pixel-preview {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #000, 0 0 10px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+    display: none;
+    border-radius: 2px;
+    z-index: 10;
+    animation: pulse 1s ease-in-out infinite;
+}
+
+.pixel-preview.active {
+    display: block;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.9;
+    }
+    50% {
+        transform: scale(1.15);
+        opacity: 1;
+    }
+}
+
+@media (max-width: 1024px) {
+    .draw-interface {
+        grid-template-columns: 1fr;
+    }
+    
+    .draw-sidebar {
+        position: static;
+    }
+    
+    .canvas-container {
+        min-height: 400px;
     }
 }
