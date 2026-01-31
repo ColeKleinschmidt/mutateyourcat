@@ -1455,31 +1455,17 @@ footer small {
 }
 
 .pixel-preview {
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    border: 2px solid #fff;
-    box-shadow: 0 0 0 2px #000, 0 0 10px rgba(0, 0, 0, 0.5);
+    position: fixed;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(0, 0, 0, 0.2);
     pointer-events: none;
     display: none;
     border-radius: 2px;
-    z-index: 10;
-    animation: pulse 1s ease-in-out infinite;
+    z-index: 10000;
 }
 
 .pixel-preview.active {
     display: block;
-}
-
-@keyframes pulse {
-    0%, 100% {
-        transform: scale(1);
-        opacity: 0.9;
-    }
-    50% {
-        transform: scale(1.15);
-        opacity: 1;
-    }
 }
 
 @media (max-width: 1024px) {

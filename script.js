@@ -43,12 +43,13 @@ class PixelDrawingSystem {
         this.panX = 0;
         this.panY = 0;
         this.isDragging = false;
+        this.isDrawing = false;
         this.lastX = 0;
         this.lastY = 0;
-        this.pixelsRemaining = 100;
-        this.maxPixels = 100;
+        this.pixelsRemaining = 500;
+        this.maxPixels = 500;
         this.cooldownEnd = null;
-        this.pixelSize = 4; // Size of each "pixel" the user places
+        this.pixelSize = 16; // Size of each "pixel" the user places
         this.currentTool = 'hand'; // 'place' or 'hand'
         this.firebaseEnabled = false;
         
@@ -314,6 +315,10 @@ class PixelDrawingSystem {
             this.lastY = e.clientY;
             this.canvas.style.cursor = 'grabbing';
             e.preventDefault();
+        } else if (this.currentTool === 'place') {
+            this.isDrawing = true;
+            const coords = this.getCanvasCoordinates(e);
+            this.placePixel(coords.x, coords.y);
         }
     }
     
@@ -331,8 +336,13 @@ class PixelDrawingSystem {
             return;
         }
         
+        // Place pixels while drawing (dragging with place tool)
+        if (this.isDrawing && this.currentTool === 'place') {
+            this.placePixel(coords.x, coords.y);
+        }
+        
         // Show preview only in place mode
-        if (this.currentTool === 'place' && this.isInsideDrawingArea(coords.x, coords.y) && this.pixelsRemaining > 0) {
+        if (this.currentTool === 'place' && this.isInsideDrawingArea(coords.x, coords.y)) {
             this.showPreview(e, coords);
         } else {
             this.hidePreview();
@@ -341,6 +351,7 @@ class PixelDrawingSystem {
     
     handleMouseUp() {
         this.isDragging = false;
+        this.isDrawing = false;
         if (this.currentTool === 'hand') {
             this.canvas.style.cursor = 'grab';
         } else {
@@ -363,10 +374,19 @@ class PixelDrawingSystem {
     
     showPreview(e, coords) {
         const preview = document.getElementById('pixelPreview');
+        const rect = this.canvas.getBoundingClientRect();
+        const displaySize = this.pixelSize * (rect.width / this.canvas.width);
+        
         preview.classList.add('active');
-        preview.style.left = `${e.clientX + 15}px`;
-        preview.style.top = `${e.clientY + 15}px`;
+        preview.style.width = `${displaySize}px`;
+        preview.style.height = `${displaySize}px`;
+        preview.style.left = `${e.clientX}px`;
+        preview.style.top = `${e.clientY}px`;
         preview.style.background = this.selectedColor;
+        preview.style.opacity = '0.5';
+        preview.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+        preview.style.transform = 'translate(-50%, -50%)';
+        preview.style.pointerEvents = 'none';
     }
     
     hidePreview() {
@@ -383,11 +403,6 @@ class PixelDrawingSystem {
             return;
         }
         
-        if (this.pixelsRemaining <= 0) {
-            alert('No pixels remaining! Wait for the cooldown to finish.');
-            return;
-        }
-        
         this.placePixel(coords.x, coords.y);
     }
     
@@ -399,32 +414,18 @@ class PixelDrawingSystem {
         // Silently ignore if outside drawing area
         if (!this.isInsideDrawingArea(x, y)) return;
         
-        if (this.pixelsRemaining <= 0) return;
-        
         // Check if this is a new pixel placement
         if (!this.pixelData) this.pixelData = {};
         const key = `${x},${y}`;
         const existingColor = this.pixelData[key];
         
-        // If pixel already exists with same color, don't decrement count
+        // If pixel already exists with same color, don't do anything
         const isNewPixel = !existingColor || existingColor !== this.selectedColor;
+        
+        if (!isNewPixel) return;
         
         // Store pixel data
         this.pixelData[key] = this.selectedColor;
-        
-        // Only decrease pixel count for new/changed pixels
-        if (isNewPixel) {
-            this.pixelsRemaining--;
-            this.updatePixelCount();
-            
-            // If this is the first pixel placed, start cooldown
-            if (this.pixelsRemaining === this.maxPixels - 1 && !this.cooldownEnd) {
-                this.startCooldown();
-            }
-            
-            // Save data
-            this.saveCooldownData();
-        }
         
         // Save to Firebase or localStorage
         if (this.firebaseEnabled && pixelsRef) {
@@ -474,7 +475,7 @@ class PixelDrawingSystem {
     }
     
     updatePixelCount() {
-        document.getElementById('pixelCount').textContent = this.pixelsRemaining;
+        document.getElementById('pixelCount').textContent = '∞';
     }
     
     savePixelData() {
